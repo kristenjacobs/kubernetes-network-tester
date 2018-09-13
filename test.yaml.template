@@ -1,0 +1,73 @@
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: network-test-rbac
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+    name: host-network
+spec:
+  template:
+    metadata:
+      labels:
+        app: host-network
+    spec:
+      hostNetwork: true
+      containers:
+      - name: host-network
+        image: "oraclelinux:7.5"
+        command: 
+        - /bin/bash
+        - -c
+        - |  
+TEST_SCRIPT
+---        
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+    name: pod-network
+spec:
+  template:
+    metadata:
+      labels:
+        app: pod-network
+    spec:
+      containers:
+      - name: pod-network
+        image: "oraclelinux:7.5"
+        command: 
+        - /bin/bash
+        - -c
+        - |  
+TEST_SCRIPT
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: host-network
+spec:
+  selector:
+    app: host-network
+  ports:
+  - protocol: TCP
+    port: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pod-network
+spec:
+  selector:
+    app: pod-network
+  ports:
+  - protocol: TCP
+    port: 80
