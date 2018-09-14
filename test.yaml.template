@@ -23,13 +23,20 @@ spec:
     spec:
       hostNetwork: true
       containers:
-      - name: host-network
+      - name: host-network-test-connectivity
         image: "oraclelinux:7.5"
         command: 
         - /bin/bash
         - -c
         - |  
-TEST_SCRIPT
+TEST_SCRIPT_CONNECTIVITY
+      - name: host-network-tcp-server
+        image: "oraclelinux:7.5"
+        command: 
+        - /bin/bash
+        - -c
+        - |  
+          yum install -y nc ; nc -lk -p 5555
 ---        
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -42,13 +49,27 @@ spec:
         app: pod-network
     spec:
       containers:
-      - name: pod-network
+      - name: pod-network-test-connectivity
         image: "oraclelinux:7.5"
         command: 
         - /bin/bash
         - -c
         - |  
-TEST_SCRIPT
+TEST_SCRIPT_CONNECTIVITY
+      - name: pod-network-test-dns
+        image: "oraclelinux:7.5"
+        command: 
+        - /bin/bash
+        - -c
+        - |  
+TEST_SCRIPT_DNS
+      - name: pod-network-tcp-server
+        image: "oraclelinux:7.5"
+        command: 
+        - /bin/bash
+        - -c
+        - |  
+          yum install -y nc ; nc -lk -p 5555
 ---
 kind: Service
 apiVersion: v1
@@ -59,7 +80,8 @@ spec:
     app: host-network
   ports:
   - protocol: TCP
-    port: 80
+    port: 5555
+    name: tcp
 ---
 kind: Service
 apiVersion: v1
@@ -70,4 +92,31 @@ spec:
     app: pod-network
   ports:
   - protocol: TCP
-    port: 80
+    port: 5555
+    name: tcp
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: host-network-headless
+spec:
+  clusterIP: None
+  selector:
+    app: host-network
+  ports:
+  - protocol: TCP
+    port: 5555
+    name: tcp
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pod-network-headless
+spec:
+  clusterIP: None
+  selector:
+    app: pod-network
+  ports:
+  - protocol: TCP
+    port: 5555
+    name: tcp
